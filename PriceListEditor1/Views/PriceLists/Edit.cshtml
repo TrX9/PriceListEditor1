@@ -1,0 +1,99 @@
+﻿@model PriceListEditor1.Models.PriceList
+
+@{
+    ViewData["Title"] = "Edit Price List";
+}
+
+<h1>Edit Price List</h1>
+
+<h4>PriceList</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+<div>
+
+    <hr />
+
+<div>
+    <h4>Custom Columns</h4>
+    <p>
+        <a asp-action="AddCustomColumn" asp-route-id="@Model.Id" class="btn btn-success">Add Custom Column</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Column Name</th>
+                <th>Data Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var column in Model.Columns)
+            {
+                <tr>
+                    <td>@column.Name</td>
+                    <td>@column.DataType</td>
+                    <td>
+                    <form asp-action="EditColumn" method="post" class="form-inline">
+                        <input type="hidden" name="columnId" value="@column.Id" />
+                        <input type="text" name="columnName" value="@column.Name" class="form-control" />
+                        <select name="columnType" class="form-control">
+                            @foreach (var col in Model.Columns)
+                            {
+                                        <option value="@col.DataType.ToString()" selected="@(col.DataType == Model.SelectedDataType ? "selected" : null)">
+                                            @column.DataType.ToString()
+                                        </option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-primary">Edit</button>
+                    </form>
+                    <form asp-action="DeleteColumn" method="post" class="d-inline">
+                        <input type="hidden" name="columnId" value="@column.Id" />
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+        <h2>Add New Column</h2>
+        <form asp-action="AddColumn" method="post">
+            <input type="hidden" name="priceListId" value="@Model.Id" />
+            <div class="form-group">
+                <label for="columnName">Column Name</label>
+                <input type="text" name="columnName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="columnType">Column Type</label>
+                <select name="columnType" class="form-control">
+                    <option value="String">String</option>
+                    <option value="Integer">Integer</option>
+                    <option value="Decimal">Decimal</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Column</button>
+        </form>
+
+</div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
