@@ -25,7 +25,7 @@ namespace PriceListEditor1.Data
                 .HasMany(p => p.Columns)
                 .WithOne(c => c.PriceList)
                 .HasForeignKey(c => c.PriceListId)
-                .OnDelete(DeleteBehavior.Cascade); // Cascade delete if PriceList is deleted
+                .OnDelete(DeleteBehavior.Cascade);
 
             base.OnModelCreating(modelBuilder);
         }

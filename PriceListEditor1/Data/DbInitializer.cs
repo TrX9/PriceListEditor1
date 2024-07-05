@@ -8,16 +8,14 @@ namespace PriceListEditor.Data
     {
         public static void Initialize(PriceListContext context)
         {
-            // Check if the database has been created
             if (context.Database.GetPendingMigrations().Any())
             {
                 context.Database.Migrate();
             }
 
-            // Look for any price lists
             if (context.PriceLists.Any())
             {
-                return;   // DB has been seeded
+                return;   
             }
 
             var priceLists = new[]

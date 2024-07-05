@@ -52,7 +52,7 @@ namespace PriceListEditor1.Controllers
                 }
 
                 column.PriceListId = id;
-                column.IsCustom = true; // mark as custom column
+                column.IsCustom = true; 
                 priceList.Columns.Add(column);
 
                 _context.Update(priceList);
@@ -125,16 +125,14 @@ namespace PriceListEditor1.Controllers
                         return NotFound();
                     }
 
-                    // Update the price list name
                     existingPriceList.Name = priceList.Name;
 
-                    // Update columns
                     foreach (var column in existingPriceList.Columns)
                     {
                         var updatedColumn = priceList.Columns.FirstOrDefault(c => c.Id == column.Id);
                         if (updatedColumn != null)
                         {
-                            column.Name = updatedColumn.Name; // Update column name
+                            column.Name = updatedColumn.Name;
                         }
                     }
 
@@ -238,7 +236,7 @@ namespace PriceListEditor1.Controllers
                 {
                     if (!product.DynamicColumns.ContainsKey(column.Name))
                     {
-                        product.DynamicColumns[column.Name] = "N/A"; // Default value for missing columns
+                        product.DynamicColumns[column.Name] = "N/A"; 
                     }
                 }
             }
