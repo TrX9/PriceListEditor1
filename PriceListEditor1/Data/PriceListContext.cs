@@ -20,6 +20,14 @@ namespace PriceListEditor1.Data
                     v => JsonSerializer.Serialize(v, new JsonSerializerOptions { WriteIndented = false }),
                     v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, new JsonSerializerOptions { WriteIndented = false })
                 );
+
+            modelBuilder.Entity<PriceList>()
+                .HasMany(p => p.Columns)
+                .WithOne(c => c.PriceList)
+                .HasForeignKey(c => c.PriceListId)
+                .OnDelete(DeleteBehavior.Cascade); // Cascade delete if PriceList is deleted
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

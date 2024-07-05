@@ -61,6 +61,7 @@ namespace PriceListEditor1.Controllers
             var product = await _context.Products
                 .Include(p => p.PriceList)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (product == null)
             {
                 return NotFound();
@@ -75,8 +76,13 @@ namespace PriceListEditor1.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
+
             return RedirectToAction("Details", "PriceLists", new { id = product.PriceListId });
         }
     }

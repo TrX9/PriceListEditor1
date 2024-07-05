@@ -30,7 +30,7 @@ namespace PriceListEditor.Data
                         new Column { Name = "Warranty Period", DataType = ColumnType.String, IsCustom = false },
                         new Column { Name = "Manufacturer", DataType = ColumnType.String, IsCustom = false },
                         new Column { Name = "RAM Size", DataType = ColumnType.Integer, IsCustom = true },
-                        new Column { Name = "Price", DataType = ColumnType.Decimal, IsCustom = true } 
+                        new Column { Name = "Price", DataType = ColumnType.Decimal, IsCustom = true }
                     },
                     Products = new List<Product>
                     {

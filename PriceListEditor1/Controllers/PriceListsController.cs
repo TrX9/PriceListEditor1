@@ -20,37 +20,48 @@ namespace PriceListEditor1.Controllers
             return View(await _context.PriceLists.ToListAsync());
         }
 
-        public IActionResult AddCustomColumn(int id)
+        // GET: PriceLists/AddColumn/5
+        public IActionResult AddColumn(int? id)
         {
-            var priceList = _context.PriceLists
-                .Include(pl => pl.Columns)
-                .FirstOrDefault(pl => pl.Id == id);
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-            return View(priceList);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddCustomColumn(int id, string columnName, ColumnType dataType)
-        {
-            var priceList = await _context.PriceLists
-                .Include(pl => pl.Columns)
-                .FirstOrDefaultAsync(pl => pl.Id == id);
-
+            var priceList = _context.PriceLists.Include(p => p.Columns).FirstOrDefault(p => p.Id == id);
             if (priceList == null)
             {
                 return NotFound();
             }
 
+            ViewBag.PriceListId = id;
+            return View();
+        }
+
+        // POST: PriceLists/AddColumn
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddColumn(int id, [Bind("Name,DataType")] Column column)
+        {
             if (ModelState.IsValid)
             {
-                priceList.AddCustomColumn(columnName, dataType);
+                var priceList = _context.PriceLists.Include(p => p.Columns).FirstOrDefault(p => p.Id == id);
+                if (priceList == null)
+                {
+                    return NotFound();
+                }
+
+                column.PriceListId = id;
+                column.IsCustom = true; // mark as custom column
+                priceList.Columns.Add(column);
+
                 _context.Update(priceList);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Edit), new { id });
             }
 
-            return View(priceList);
+            ViewBag.PriceListId = id;
+            return View(column);
         }
 
         // GET: PriceLists/Create
@@ -82,21 +93,19 @@ namespace PriceListEditor1.Controllers
             }
 
             var priceList = await _context.PriceLists
-                .Include(pl => pl.Columns)
-                .Include(pl => pl.Products)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                                          .Include(pl => pl.Columns)
+                                          .FirstOrDefaultAsync(pl => pl.Id == id);
             if (priceList == null)
             {
                 return NotFound();
             }
-
             return View(priceList);
         }
 
         // POST: PriceLists/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] PriceList priceList)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Columns")] PriceList priceList)
         {
             if (id != priceList.Id)
             {
@@ -107,7 +116,29 @@ namespace PriceListEditor1.Controllers
             {
                 try
                 {
-                    _context.Update(priceList);
+                    var existingPriceList = await _context.PriceLists
+                                                          .Include(pl => pl.Columns)
+                                                          .FirstOrDefaultAsync(pl => pl.Id == id);
+
+                    if (existingPriceList == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Update the price list name
+                    existingPriceList.Name = priceList.Name;
+
+                    // Update columns
+                    foreach (var column in existingPriceList.Columns)
+                    {
+                        var updatedColumn = priceList.Columns.FirstOrDefault(c => c.Id == column.Id);
+                        if (updatedColumn != null)
+                        {
+                            column.Name = updatedColumn.Name; // Update column name
+                        }
+                    }
+
+                    _context.Update(existingPriceList);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -126,6 +157,11 @@ namespace PriceListEditor1.Controllers
             return View(priceList);
         }
 
+        private bool PriceListExistsById(int id)
+        {
+            return _context.PriceLists.Any(e => e.Id == id);
+        }
+
         // GET: PriceLists/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -135,7 +171,10 @@ namespace PriceListEditor1.Controllers
             }
 
             var priceList = await _context.PriceLists
+                .Include(p => p.Columns)
+                .Include(p => p.Products)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (priceList == null)
             {
                 return NotFound();
@@ -149,9 +188,19 @@ namespace PriceListEditor1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var priceList = await _context.PriceLists.FindAsync(id);
-            _context.PriceLists.Remove(priceList);
-            await _context.SaveChangesAsync();
+            var priceList = await _context.PriceLists
+                .Include(p => p.Columns)
+                .Include(p => p.Products)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (priceList != null)
+            {
+                _context.Columns.RemoveRange(priceList.Columns);
+                _context.Products.RemoveRange(priceList.Products);
+                _context.PriceLists.Remove(priceList);
+                await _context.SaveChangesAsync();
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -197,25 +246,46 @@ namespace PriceListEditor1.Controllers
             return View(priceList);
         }
 
-
-        // Action to delete a column
-        [HttpPost]
-        public async Task<IActionResult> DeleteColumn(int columnId)
+        // POST: PriceLists/DeleteColumn/5
+        [HttpPost, ActionName("DeleteColumn")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteColumnConfirmed(int id)
         {
-            var column = await _context.Columns
-                                       .Include(c => c.PriceList)
-                                       .ThenInclude(pl => pl.Products)
-                                       .FirstOrDefaultAsync(c => c.Id == columnId);
+            var column = await _context.Columns.FindAsync(id);
+            if (column != null)
+            {
+                var productsWithColumnData = _context.Products.Where(p => p.DynamicColumns.ContainsKey(column.Name)).ToList();
+                if (productsWithColumnData.Any())
+                {
+                    ModelState.AddModelError("", "Cannot delete column with existing data.");
+                    return RedirectToAction(nameof(Edit), new { id = column.PriceListId });
+                }
 
+                _context.Columns.Remove(column);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Edit), new { id = column.PriceListId });
+        }
+
+        // GET: PriceLists/DeleteColumn/5
+        public async Task<IActionResult> DeleteColumn(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var column = await _context.Columns.FindAsync(id);
             if (column == null)
             {
                 return NotFound();
             }
 
-            if (column.HasData(column.PriceList.Products))
+            var productsWithColumnData = await _context.Products.ToListAsync();
+            if (productsWithColumnData.Any(p => p.DynamicColumns.ContainsKey(column.Name)))
             {
-                // Optionally, add a message to notify the user that the column cannot be deleted
-                TempData["Error"] = "Cannot delete column because it contains data.";
+                ModelState.AddModelError("", "Cannot delete column with existing data.");
                 return RedirectToAction(nameof(Edit), new { id = column.PriceListId });
             }
 
@@ -225,4 +295,6 @@ namespace PriceListEditor1.Controllers
             return RedirectToAction(nameof(Edit), new { id = column.PriceListId });
         }
     }
+
 }
+

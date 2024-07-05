@@ -1,0 +1,34 @@
+﻿@model PriceListEditor1.Models.Column
+
+@{
+    ViewData["Title"] = "Add Column";
+    int priceListId = ViewBag.PriceListId;
+}
+
+<h2>Add Column</h2>
+<h4>Column</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="AddColumn" method="post">
+            <input type="hidden" name="id" value="@priceListId" />
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="dataType">Data Type:</label>
+                <select id="dataType" name="dataType" class="form-control" asp-items="Html.GetEnumSelectList<PriceListEditor1.Models.ColumnType>()">
+                    <option value="">-- Select Data Type --</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Column</button>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
